@@ -60,46 +60,27 @@ body {
     margin-bottom: 5px;
 }
 
-#answerColumns div > div {
-    display: inline-block;
-    width: 100%;
-    vertical-align: top;
-}
-
-#correctAnswersContainer {
-    width: 100%;
-    margin-bottom: 20px; /* Space between correct and revealed answers */
-}
-
-#correctAnswers {
+#answerColumns {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+    justify-content: space-between; /* Distribute space between columns */
+    align-items: flex-start; /* Align headers at the top */
+    gap: 20px; /* Space between the containers */
+    margin-bottom: 20px;
 }
 
-#remainingAnswersContainer {
-    width: 100%;
-    margin-top: 20px; /* Space between correct and revealed answers */
+#correctAnswersContainer, #wrongAnswersContainer, #remainingAnswersContainer {
+    flex: 1; /* Allow each section to take up equal space */
 }
 
-#remainingAnswers {
+#correctAnswers, #wrongAnswers, #remainingAnswers {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+    flex-direction: column;
+    gap: 10px; /* Space between header and content */
 }
 
-.correct-word-column {
-    display: inline-block;
-    vertical-align: top;
-    margin-right: 20px;
-    padding: 5px;
-    min-width: 60px;
-}
-
-.revealed-word-column {
-    display: inline-block;
-    vertical-align: top;
-    margin-right: 20px;
-    padding: 5px;
-    min-width: 60px;
+#correctAnswers strong, #wrongAnswers strong, #remainingAnswers strong {
+    display: block;
+    margin-bottom: 10px; /* Add consistent margin below each header */
+    font-size: 18px; /* Make sure the font size is consistent */
+    line-height: 1.2; /* Ensure consistent line height */
 }
