@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Builder</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h1>Word Builder</h1>
+
+    <div id="letterInput">
+        <input type="text" id="letters" placeholder="Enter letters" maxlength="7">
+        <button onclick="submitLetters()">Submit</button>
+    </div>
+
+    <div id="tileGenerator">
+        <label for="tileCount">Number of tiles:</label>
+        <input type="number" id="tileCount" value="7" min="1" max="7">
+        <button onclick="generateRandomTiles()">Generate Random Tiles</button>
+    </div>
+
+    <div id="lengthSettings">
+        <label for="minLength">Minimum Word Length:</label>
+        <input type="number" id="minLength" value="3" min="3" max="7">
+        <label for="maxLength">Maximum Word Length:</label>
+        <input type="number" id="maxLength" value="5" min="2" max="7">
+    </div>
+
+    <div id="timerInput">
+        <label for="minutes">Set Timer (minutes):</label>
+        <input type="number" id="minutes" value="3" min="1">
+    </div>
+
+    <div id="scrabbleTiles"></div>
+
+    <button id="startButton" onclick="startGame()" disabled>Start</button>
+    <button id="revealButton" onclick="revealAnswers()" disabled>Reveal Answers</button>
+
+    <div id="timerDisplay">03:00</div>
+
+    <div id="wordCounts"></div>
+
+
+
+    <div id="guessInput">
+        <input type="text" id="guess" placeholder="Type your guess" disabled>
+        <button onclick="submitGuess()" disabled>Submit Guess</button>
+    </div>
+
+
+  <div id="answerColumns">
+    <div id="correctAnswersContainer">
+        <div id="correctAnswers"><strong>Correct Answers:</strong></div>
+    </div>
+    
+    <div id="wrongAnswersContainer">
+        <div id="wrongAnswers"><strong>Wrong Answers:</strong></div>
+    </div>
+    
+    <div id="remainingAnswersContainer">
+        <div id="remainingAnswers"><strong>Remaining Answers:</strong></div>
+    </div>
+</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
