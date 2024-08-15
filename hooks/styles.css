@@ -1,0 +1,76 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 50px;
+}
+
+h1 {
+    color: #333;
+}
+
+#root-word {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+#word-flow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 20px;
+    justify-items: center;
+    position: relative;
+}
+
+.word-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.arrow {
+    width: 1px;
+    height: 20px;
+    background-color: #000;
+    margin: 5px auto;
+}
+
+.arrow.horizontal {
+    width: 20px;
+    height: 1px;
+}
+
+.node circle {
+            fill: #fff;
+            stroke: steelblue;
+            stroke-width: 3px;
+        }
+
+        .node text {
+            font: 12px sans-serif;
+        }
+
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 2px;
+        }
+
+/* Styles for the guess input text box */
+#guessInput {
+    width: 300px;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#guessInput:focus {
+    border-color: #007bff;
+    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.5);
+}
+
