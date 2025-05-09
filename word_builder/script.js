@@ -100,7 +100,7 @@ async function startGame() {
     document.getElementById('revealButton').disabled = false; // Enable the Reveal Answers button
 
     try {
-        const response = await fetch('https://ia903406.us.archive.org/31/items/csw21/CSW21.txt');
+        const response = await fetch('https://raw.githubusercontent.com/jalapic/word_games/refs/heads/main/word_builder/CSW25.txt');
         const words = await response.text();
         allWords = words.split('\n').map(word => word.trim().toUpperCase()); // Store the full list in allWords
 
