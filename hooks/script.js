@@ -161,7 +161,7 @@ function revealAllWords() {
 }
 
 // Fetch the word list and set up the interface
-fetch('https://raw.githubusercontent.com/jalapic/word_games/main/word_builder/CSW21.txt')
+fetch('https://raw.githubusercontent.com/jalapic/word_games/refs/heads/main/word_builder/CSW25.txt')
     .then(response => response.text())
     .then(data => {
         const words = data.split('\n').map(word => word.trim().toUpperCase());
