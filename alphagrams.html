@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alphagram Scrabble Trainer</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+    }
+    aside {
+      width: 260px;
+      background: #fff;
+      border-right: 1px solid #ddd;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+    }
+    .grid-container {
+      display: flex;
+      flex: 1;
+    }
+    .grid {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      padding: 1rem;
+      border-left: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+      background: #fff;
+      overflow-y: auto;
+    }
+    .results {
+      width: 260px;
+      padding: 1rem;
+      background: #f3f4f6;
+      overflow-y: auto;
+    }
+    .tile {
+      display: inline-block;
+      margin: 5px;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      width: 120px;
+      background: #e0f2f1;
+    }
+    .difficulty-0 { background: #e0f7fa; }
+    .difficulty-1 { background: #b2ebf2; }
+    .difficulty-2 { background: #80deea; }
+    .difficulty-3 { background: #4dd0e1; }
+    .difficulty-4 { background: #26c6da; }
+    .difficulty-5 { background: #00bcd4; }
+    .tile input {
+      width: 100%;
+      margin-top: 0.3rem;
+      font-size: 1rem;
+    }
+    .filter-section label {
+      display: block;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <aside>
+    <h3>Filters</h3>
+    <div class="filter-section">
+      <label>Min Length: <input type="number" id="minLength" value="4" /></label>
+      <label>Max Length: <input type="number" id="maxLength" value="6" /></label>
+      <label>Min Difficulty: <input type="number" id="minDifficulty" value="0" /></label>
+      <label>Max Difficulty: <input type="number" id="maxDifficulty" value="100" /></label>
+      <label>Min Probability: <input type="number" id="minProb" value="0" /></label>
+      <label>Max Probability: <input type="number" id="maxProb" value="100000" /></label>
+      <label>Contains Letters (RegEx): <input type="text" id="pattern" value="" /></label>
+      <label>Min Vowels: <input type="number" id="minVowels" value="1" /></label>
+      <label>Max Vowels: <input type="number" id="maxVowels" value="5" /></label>
+      <label>Alphagram Count: <input type="number" id="alphaCount" value="20" /></label>
+    </div>
+    <button onclick="applyFilters()">Generate Grid</button>
+    <button onclick="revealAll()">Reveal All</button>
+  </aside>
+
+  <main>
+    <h1>Anagram Grid</h1>
+    <div id="summary"></div>
+    <div class="grid-container">
+      <div class="grid" id="wordGrid"></div>
+      <div class="results">
+        <h3>Correct Answers</h3>
+        <div id="correctList"></div>
+        <h3>Wrong Answers</h3>
+        <div id="wrongList"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let wordData = [];
+    let userCorrect = new Set();
+    let userWrong = new Set();
+
+    fetch("csw25_full_with_imputed_probs.csv")
+      .then(r => r.text())
+      .then(text => {
+        const lines = text.trim().split("\n").slice(1);
+        const grouped = _.groupBy(lines.map(row => {
+          const [alpha, word, prob, diff, length] = row.split(",");
+          return { alpha, word, prob: +prob, diff: +diff, length: +length };
+        }), "alpha");
+
+        wordData = Object.values(grouped).map(group => {
+          return {
+            alpha: group[0].alpha,
+            words: group.map(x => x.word),
+            difficulty: Math.max(...group.map(x => x.diff)),
+            probability: Math.max(...group.map(x => x.prob)),
+            length: group[0].length,
+            vowelCount: (group[0].alpha.match(/[AEIOU]/g) || []).length,
+          };
+        });
+      });
+
+    function applyFilters() {
+      const minL = +document.getElementById("minLength").value;
+      const maxL = +document.getElementById("maxLength").value;
+      const minD = +document.getElementById("minDifficulty").value;
+      const maxD = +document.getElementById("maxDifficulty").value;
+      const minP = +document.getElementById("minProb").value;
+      const maxP = +document.getElementById("maxProb").value;
+      const patt = new RegExp(document.getElementById("pattern").value);
+      const minV = +document.getElementById("minVowels").value;
+      const maxV = +document.getElementById("maxVowels").value;
+      const alphaLimit = +document.getElementById("alphaCount").value;
+
+      const grid = document.getElementById("wordGrid");
+      const summary = document.getElementById("summary");
+      grid.innerHTML = "";
+
+      userCorrect.clear();
+      userWrong.clear();
+      updateLists();
+
+      let filtered = wordData.filter(({ alpha, words, difficulty, probability, length, vowelCount }) =>
+        length >= minL &&
+        length <= maxL &&
+        difficulty >= minD &&
+        difficulty <= maxD &&
+        probability >= minP &&
+        probability <= maxP &&
+        patt.test(alpha) &&
+        vowelCount >= minV &&
+        vowelCount <= maxV
+      );
+
+      filtered = _.shuffle(filtered).slice(0, alphaLimit);
+
+      let shown = 0;
+
+      filtered.forEach(({ alpha, words, difficulty }) => {
+        const div = document.createElement("div");
+        div.className = `tile difficulty-${Math.floor(difficulty / 20)}`;
+        div.innerHTML = `${alpha} (${words.length})<br><input type="text" data-alpha="${alpha}" oninput="checkGuess(event)" />`;
+        grid.appendChild(div);
+        shown += words.length;
+      });
+
+      summary.textContent = `${shown} total words to guess.`;
+    }
+
+    function checkGuess(event) {
+      const input = event.target.value.toUpperCase();
+      const alpha = event.target.dataset.alpha;
+      const group = wordData.find(g => g.alpha === alpha);
+
+      if (group.words.includes(input)) {
+        if (!userCorrect.has(input)) {
+          userCorrect.add(input);
+          updateLists();
+        }
+      } else {
+        if (!userWrong.has(input)) {
+          userWrong.add(input);
+          updateLists();
+        }
+      }
+    }
+
+    function updateLists() {
+      document.getElementById("correctList").textContent = Array.from(userCorrect).join(", ");
+      document.getElementById("wrongList").textContent = Array.from(userWrong).join(", ");
+    }
+
+    function revealAll() {
+      const all = wordData.flatMap(g => g.words);
+      document.getElementById("correctList").textContent = all.join(", ");
+    }
+  </script>
+</body>
+</html>
