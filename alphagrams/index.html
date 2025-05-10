@@ -79,6 +79,8 @@
     <option value="6">6</option>
   </select>
 </label><br>
+<label><input type="checkbox" id="hardMode"> Hard Mode</label><br>
+
 
   </aside>
   <main>
@@ -108,6 +110,8 @@ let newWordsSet = new Set();
 let userCorrect = new Set();
 let userWrong = new Set();
 let allWords = new Set();
+let disabledAlphas = new Set();
+
 
 fetch("https://raw.githubusercontent.com/jalapic/word_games/refs/heads/main/alphagrams/csw24newonly.txt")
   .then(r => r.text())
@@ -223,6 +227,7 @@ const gridCols = +document.getElementById("gridColumns").value;
   grid.innerHTML = "";
   userCorrect.clear();
   userWrong.clear();
+  disabledAlphas.clear();
   updateLists();
 
   window.activeTiles = [];
@@ -254,63 +259,95 @@ const gridCols = +document.getElementById("gridColumns").value;
   summary.textContent = `${shown} total words to guess.`;
 };
 
+function getAlphagram(word) {
+  return word.toUpperCase().split('').sort().join('');
+}
+
+
 window.submitGuess = function () {
   const guess = document.getElementById("guessBox").value.trim().toUpperCase();
   if (!guess) return;
   let found = false;
 
   document.querySelectorAll(".tile").forEach(tile => {
-    const words = JSON.parse(tile.dataset.words);
-    if (words.includes(guess)) {
-      if (!userCorrect.has(guess)) {
-        userCorrect.add(guess);
+  const words = JSON.parse(tile.dataset.words);
+  const alpha = tile.dataset.alpha;
 
-        const remaining = words.filter(w => !userCorrect.has(w)).length;
-        const alpha = tile.dataset.alpha;
-        tile.innerHTML = `${alpha} (${remaining})<br>`;
+  if (disabledAlphas.has(alpha)) return; // skip disabled tiles
 
-        if (remaining === 0) {
-          tile.style.background = '#a5d6a7';
-        } else if (remaining === 1) {
-          tile.style.background = '#ffe082';
-        } else if (remaining <= 2) {
-          tile.style.background = '#ffcc80';
-        } else {
-          tile.style.background = '#bbdefb';
-        }
+  if (words.includes(guess)) {
+    if (!userCorrect.has(guess)) {
+      userCorrect.add(guess);
+
+      const remaining = words.filter(w => !userCorrect.has(w)).length;
+      tile.innerHTML = `${alpha} (${remaining})<br>`;
+
+      if (remaining === 0) {
+        tile.style.background = '#a5d6a7';
+      } else if (remaining === 1) {
+        tile.style.background = '#ffe082';
+      } else if (remaining <= 2) {
+        tile.style.background = '#ffcc80';
+      } else {
+        tile.style.background = '#bbdefb';
       }
-      found = true; // ✅ even if already correct
     }
-  });
+    found = true;
+  } else if (!found && document.getElementById("hardMode").checked) {
+const guessAlpha = getAlphagram(guess);
+if (
+  document.getElementById("hardMode").checked &&
+  !words.includes(guess) &&
+  guessAlpha === alpha
+) {
+  disabledAlphas.add(alpha);
+  tile.style.background = '#ccc';
+}
+    
+  }
+});
+
 
   if (!found) userWrong.add(guess);
   updateLists();
   document.getElementById("guessBox").value = "";
 
-  // Optional: well done popup if all solved
-  const allSolved = Array.from(document.querySelectorAll(".tile")).every(tile => {
-    const words = JSON.parse(tile.dataset.words);
-    return words.every(w => userCorrect.has(w));
-  });
+  const allCleared = Array.from(document.querySelectorAll(".tile")).every(tile => {
+  const alpha = tile.dataset.alpha;
+  const words = JSON.parse(tile.dataset.words);
+  return disabledAlphas.has(alpha) || words.every(w => userCorrect.has(w));
+});
 
-  if (allSolved) {
-    const msg = document.createElement("div");
-    msg.textContent = "🎉 Well done! All words solved!";
-    msg.style.position = "fixed";
-    msg.style.top = "40%";
-    msg.style.left = "50%";
-    msg.style.transform = "translate(-50%, -50%)";
-    msg.style.background = "#d4edda";
-    msg.style.border = "2px solid #28a745";
-    msg.style.padding = "2rem";
-    msg.style.fontSize = "1.5rem";
-    msg.style.zIndex = 1000;
-    msg.style.boxShadow = "0 0 20px rgba(0,0,0,0.3)";
-    document.body.appendChild(msg);
+const allSolved = Array.from(document.querySelectorAll(".tile")).every(tile => {
+  const words = JSON.parse(tile.dataset.words);
+  return words.every(w => userCorrect.has(w));
+});
 
-    setTimeout(() => msg.remove(), 3000);
-  }
+if (allCleared) {
+  const total = window.activeTiles.reduce((sum, { words }) => sum + words.length, 0);
+  const correct = userCorrect.size;
+  const percent = ((correct / total) * 100).toFixed(1);
+
+  const msg = document.createElement("div");
+  msg.textContent = allSolved
+    ? "🎉 Well done! All words solved!"
+    : `🧠 Good try! You scored ${percent}%`;
+  msg.style.position = "fixed";
+  msg.style.top = "40%";
+  msg.style.left = "50%";
+  msg.style.transform = "translate(-50%, -50%)";
+  msg.style.background = "#d4edda";
+  msg.style.border = "2px solid #28a745";
+  msg.style.padding = "2rem";
+  msg.style.fontSize = "1.5rem";
+  msg.style.zIndex = 1000;
+  msg.style.boxShadow = "0 0 20px rgba(0,0,0,0.3)";
+  document.body.appendChild(msg);
+
+  setTimeout(() => msg.remove(), 3000);
+}
 };
+
 
 
 window.revealAll = function () {
