@@ -66,6 +66,10 @@
     <label>Max Vowels: <input type="number" id="maxVowels" value="5"></label><br>
     <label>Min Points: <input type="number" id="minPoints" value=""></label><br>
     <label>Max Points: <input type="number" id="maxPoints" value=""></label><br>
+    <label>Min Probability Rank: <input type="number" id="minProbRank" value=""></label><br>
+    <label>Max Probability Rank: <input type="number" id="maxProbRank" value=""></label><br>
+    <label>Min Anagrams: <input type="number" id="minAnagrams" value=""></label><br>
+    <label>Max Anagrams: <input type="number" id="maxAnagrams" value=""></label><br>
     <label>Alphagram Count: <input type="number" id="alphaCount" value="20"></label><br>
     <label><input type="checkbox" id="newOnly"> New Words Only</label><br>
     <button id="generateButton" onclick="applyFilters()" disabled>Generate Grid</button>
@@ -168,6 +172,23 @@ const tileValues = {
 
     });
 
+// Rank words by probability within each word length group
+const groupedByLength = {};
+
+wordData.forEach(entry => {
+  if (!groupedByLength[entry.length]) groupedByLength[entry.length] = [];
+  groupedByLength[entry.length].push(entry);
+});
+
+Object.values(groupedByLength).forEach(group => {
+  group.sort((a, b) => a.probability - b.probability); // most likely = lowest negLogProb
+  group.forEach((entry, i) => {
+    entry.probRank = i + 1; // rank starts at 1
+  });
+});
+
+
+
     console.log("✅ TXT loaded:", wordData.length, "alphagrams");
     document.getElementById("generateButton").disabled = false;
   });
@@ -233,10 +254,13 @@ window.applyFilters = function () {
   const maxPoints = +document.getElementById("maxPoints").value;
   const alphaLimit = +document.getElementById("alphaCount").value;
   const newOnly = document.getElementById("newOnly").checked;
-
+  const minProbRank = +document.getElementById("minProbRank").value;
+  const maxProbRank = +document.getElementById("maxProbRank").value;
+  const minAnagrams = +document.getElementById("minAnagrams").value;
+  const maxAnagrams = +document.getElementById("maxAnagrams").value;
   const grid = document.getElementById("wordGrid");
   const summary = document.getElementById("summary");
-const gridCols = +document.getElementById("gridColumns").value;
+  const gridCols = +document.getElementById("gridColumns").value;
   grid.innerHTML = "";
   userCorrect.clear();
   userWrong.clear();
@@ -245,7 +269,7 @@ const gridCols = +document.getElementById("gridColumns").value;
 
   window.activeTiles = [];
 
-  let filtered = wordData.filter(({ alpha, words, length, vowelCount, points }) =>
+  let filtered = wordData.filter(({ alpha, words, length, vowelCount, points, probRank }) =>
     (!minL || length >= minL) &&
     (!maxL || length <= maxL) &&
     (!patternInput || words.some(w => matchesScrabblePattern(w, patternInput))) &&
@@ -254,6 +278,10 @@ const gridCols = +document.getElementById("gridColumns").value;
     (!maxV || vowelCount <= maxV) &&
     (!minPoints || points >= minPoints) &&
     (!maxPoints || points <= maxPoints) &&
+    (!minProbRank || probRank >= minProbRank) &&
+    (!maxProbRank || probRank <= maxProbRank) &&
+    (!minAnagrams || words.length >= minAnagrams) &&
+    (!maxAnagrams || words.length <= maxAnagrams) &&
     (!newOnly || words.some(w => newWordsSet.has(w)))
   );
 
