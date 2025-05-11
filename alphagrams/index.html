@@ -64,6 +64,8 @@
     <label>Exclude Letters: <input type="text" id="excludeLetters" value=""></label><br>
     <label>Min Vowels: <input type="number" id="minVowels" value="0"></label><br>
     <label>Max Vowels: <input type="number" id="maxVowels" value="5"></label><br>
+    <label>Min Points: <input type="number" id="minPoints" value=""></label><br>
+    <label>Max Points: <input type="number" id="maxPoints" value=""></label><br>
     <label>Alphagram Count: <input type="number" id="alphaCount" value="20"></label><br>
     <label><input type="checkbox" id="newOnly"> New Words Only</label><br>
     <button id="generateButton" onclick="applyFilters()" disabled>Generate Grid</button>
@@ -137,6 +139,13 @@ fetch("https://raw.githubusercontent.com/jalapic/word_games/refs/heads/main/word
       return acc;
     }, {});
 
+const tileValues = {
+  A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,
+  O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10
+};
+
+
+
     wordData = Object.entries(grouped).map(([alpha, group]) => {
       const length = group[0].length;
       const tileFreq = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').reduce((acc, l) => {
@@ -149,12 +158,14 @@ fetch("https://raw.githubusercontent.com/jalapic/word_games/refs/heads/main/word
       }, 1);
       const negLogProb = -Math.log10(prob);
       return {
-        alpha,
-        words: group,
-        length,
-        vowelCount: (alpha.match(/[AEIOU]/g) || []).length,
-        probability: negLogProb
-      };
+  alpha,
+  words: group,
+  length,
+  vowelCount: (alpha.match(/[AEIOU]/g) || []).length,
+  probability: negLogProb,
+  points: group[0].split('').reduce((sum, l) => sum + tileValues[l.toUpperCase()], 0)
+};
+
     });
 
     console.log("✅ TXT loaded:", wordData.length, "alphagrams");
@@ -218,6 +229,8 @@ window.applyFilters = function () {
   const excludeLetters = document.getElementById("excludeLetters").value.toUpperCase();
   const minV = +document.getElementById("minVowels").value;
   const maxV = +document.getElementById("maxVowels").value;
+  const minPoints = +document.getElementById("minPoints").value;
+  const maxPoints = +document.getElementById("maxPoints").value;
   const alphaLimit = +document.getElementById("alphaCount").value;
   const newOnly = document.getElementById("newOnly").checked;
 
@@ -232,13 +245,15 @@ const gridCols = +document.getElementById("gridColumns").value;
 
   window.activeTiles = [];
 
-  let filtered = wordData.filter(({ alpha, words, length, vowelCount }) =>
+  let filtered = wordData.filter(({ alpha, words, length, vowelCount, points }) =>
     (!minL || length >= minL) &&
     (!maxL || length <= maxL) &&
     (!patternInput || words.some(w => matchesScrabblePattern(w, patternInput))) &&
     (!excludeLetters || words.every(w => ![...excludeLetters].some(l => w.includes(l)))) &&
     (!minV || vowelCount >= minV) &&
     (!maxV || vowelCount <= maxV) &&
+    (!minPoints || points >= minPoints) &&
+    (!maxPoints || points <= maxPoints) &&
     (!newOnly || words.some(w => newWordsSet.has(w)))
   );
 
