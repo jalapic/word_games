@@ -136,7 +136,7 @@ fetch("https://raw.githubusercontent.com/jalapic/word_games/refs/heads/main/word
       if (!grouped[alpha]) grouped[alpha] = [];
       grouped[alpha].push(word);
     }
-    const tileDistribution = "EEEEEEEEEEEEAAAAAAAAAIIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGGBBCCMMPPFFHHVVWWYYKJXQZ".split("");
+    const tileDistribution = "EEEEEEEEEEEEAAAAAAAAAIIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ".split("");
     const totalTiles = tileDistribution.length;
     const tileCounts = tileDistribution.reduce((acc, ltr) => {
       acc[ltr] = (acc[ltr] || 0) + 1;
