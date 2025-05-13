@@ -74,6 +74,8 @@
     <label><input type="checkbox" id="newOnly"> New Words Only</label><br>
     <button id="generateButton" onclick="applyFilters()" disabled>Generate Grid</button>
     <button onclick="revealAll()">Reveal All</button>
+    <button onclick="retestMissed()">Retest Missed</button>
+
  <hr>
 <h3>Options</h3>
 <label>Grid Columns:
@@ -441,6 +443,64 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   
+
+  // Function to Retest Missed words
+
+window.retestMissed  = function (){
+  const missed = [];
+
+  document.querySelectorAll(".tile").forEach(tile => {
+    const alpha = tile.dataset.alpha;
+    const words = JSON.parse(tile.dataset.words);
+
+    const unsolved = words.some(w => !userCorrect.has(w));
+    const disabled = disabledAlphas.has(alpha);
+
+    if (unsolved) {
+      missed.push(alpha);
+    }
+  });
+
+  if (missed.length === 0) {
+    alert("No missed alphagrams to retest.");
+    return;
+  }
+
+  // Reset state
+  userCorrect.clear();
+  userWrong.clear();
+  disabledAlphas.clear();
+  updateLists();
+
+  const grid = document.getElementById("wordGrid");
+  const summary = document.getElementById("summary");
+  grid.innerHTML = "";
+
+  // Keep only the missed alphagrams
+  const filtered = wordData.filter(entry => missed.includes(entry.alpha));
+
+  window.activeTiles = [];
+  let shown = 0;
+
+  const gridCols = +document.getElementById("gridColumns").value;
+  grid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+
+  filtered.forEach(({ alpha, words }) => {
+    const div = document.createElement("div");
+    div.className = "tile";
+    div.dataset.alpha = alpha;
+    div.dataset.words = JSON.stringify(words);
+    div.innerHTML = `${alpha} (${words.length})<br>`;
+    grid.appendChild(div);
+    shown += words.length;
+    window.activeTiles.push({ alpha, words });
+  });
+
+  summary.textContent = `${shown} total words to guess.`;
+}
+
+
+
   const gridSelect = document.getElementById("gridColumns");
   if (gridSelect) {
     gridSelect.addEventListener("change", function () {
@@ -450,6 +510,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+
 
 
 
