@@ -78,7 +78,7 @@
 <body>
   <h1>Word Expansion Game</h1>
   <div id="root-word"></div>
- 
+ <div id="children-count" class="score-counter">Solved: 0 / 0</div>
   <div id="word-flow"></div>
   <div id="guessInputDiv">
     <label>Enter a 2-letter word: <input type="text" id="wordInput" maxlength="2" placeholder="e.g., AT"></label>
@@ -259,7 +259,6 @@ function findMaxWordLength(node) {
   return Math.max(node.name.length, ...node.children.map(findMaxWordLength));
 }
 </script>
-<div id="children-count" class="score-counter">Solved: 0 / 0</div>
 
 </body>
 </html>
