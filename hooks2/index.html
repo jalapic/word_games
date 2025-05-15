@@ -1,16 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2 Letter Hooks</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      height: 3000px;
+    }
+    h1 {
+      color: #333;
+    }
+    #root-word {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .node circle {
+      fill: #fff;
+      stroke: steelblue;
+      stroke-width: 3px;
+    }
+    .node text {
+      font: 32px sans-serif;
+    }
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 2px;
+    }
+    #guessInput {
+      width: 300px;
+      padding: 10px;
+      font-size: 16px;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    #guessInput:focus {
+      border-color: #007bff;
+      box-shadow: 0 2px 5px rgba(0, 123, 255, 0.5);
+    }
+    #guessInputDiv {
+      position: sticky;
+      top: 10px;
+      left: 10px;
+      background-color: #fff;
+      z-index: 1000;
+      padding: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .missed-word {
+      color: red;
+      font-weight: bold;
+    }
+
+.score-counter {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+  z-index: 1000;
+}
+
+  </style>
 </head>
 <body>
-    <h1>Word Expansion Game</h1>
-    <div id="root-word"></div>
-    <div id="word-flow"></div>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="script.js"></script>
+  <h1>Word Expansion Game</h1>
+  <div id="root-word"></div>
+ 
+  <div id="word-flow"></div>
+  <div id="guessInputDiv">
+    <label>Enter a 2-letter word: <input type="text" id="wordInput" maxlength="2" placeholder="e.g., AT"></label>
+    <button id="randomButton">Pick Random Word</button>
+    <button id="generateButton">Generate Tree</button>
+    <button id="revealButton">Reveal All</button><br><br>
+    <input type="text" id="guessInput" placeholder="Type your guess here...">
+  </div>
+  <script>
+let globalWordTree;
+let guessedWords = new Set();
+
+fetch('https://raw.githubusercontent.com/jalapic/word_games/refs/heads/main/word_builder/CSW25.txt')
+  .then(response => response.text())
+  .then(data => {
+    const words = data.split('\n').map(word => word.trim().toUpperCase());
+    setupUI(words);
+  });
+
+
+function getRandomTwoLetterWord(words) {
+  const twoLetterWords = words.filter(w => w.length === 2);
+  return twoLetterWords[Math.floor(Math.random() * twoLetterWords.length)];
+}
+
+function buildWordTree(root, words) {
+  const tree = { name: root, parent: null, children: [], guessed: true };
+  const queue = [tree];
+
+  while (queue.length > 0) {
+    const next = [];
+    queue.forEach(node => {
+      for (let letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+        const left = letter + node.name;
+        const right = node.name + letter;
+
+        if (words.includes(left) && !node.children.some(c => c.name === left)) {
+          const child = { name: left, parent: node.name, children: [], guessed: false };
+          node.children.push(child);
+          next.push(child);
+        }
+        if (words.includes(right) && !node.children.some(c => c.name === right)) {
+          const child = { name: right, parent: node.name, children: [], guessed: false };
+          node.children.push(child);
+          next.push(child);
+        }
+      }
+    });
+    queue.splice(0, queue.length, ...next);
+  }
+  return tree;
+}
+
+function countChildren(node) {
+  if (!node.children || node.children.length === 0) return 0;
+  return node.children.length + node.children.reduce((sum, child) => sum + countChildren(child), 0);
+}
+
+function setupUI(words) {
+  document.getElementById('randomButton').addEventListener('click', () => {
+    const w = getRandomTwoLetterWord(words);
+    document.getElementById('wordInput').value = w;
+    generateTree(w, words);
+  });
+
+  document.getElementById('generateButton').addEventListener('click', () => {
+    const w = document.getElementById('wordInput').value.trim().toUpperCase();
+    if (w.length === 2 && words.includes(w)) {
+      generateTree(w, words);
+    } else {
+      alert('Please enter a valid 2-letter word.');
+    }
+  });
+
+  document.getElementById('revealButton').addEventListener('click', revealAllWords);
+
+  const guessInput = document.getElementById('guessInput');
+  guessInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const guess = guessInput.value.trim().toUpperCase();
+      checkGuess(guess);
+      guessInput.value = '';
+    }
+  });
+}
+
+function generateTree(rootWord, words) {
+  d3.select('svg').remove();
+  guessedWords.clear();
+  globalWordTree = buildWordTree(rootWord, words);
+  const childrenCount = countChildren(globalWordTree);
+  const totalWords = new Set();
+  d3.hierarchy(globalWordTree).descendants().forEach(d => {
+    if (d.depth > 0) totalWords.add(d.data.name);
+  });
+  globalWordTree.totalAnswers = totalWords.size;
+  document.getElementById('children-count').textContent = `Solved: 0 / ${totalWords.size}`;
+  renderTree(globalWordTree);
+}
+
+function checkGuess(guess) {
+  let updated = false;
+  d3.selectAll('.node text').each(function(d) {
+    if (d.data.name === guess && !d.data.guessed) {
+      d.data.guessed = true;
+      guessedWords.add(guess);
+      updated = true;
+      d3.select(this)
+        .style('opacity', 1)
+        .style('font-weight', 'bold')
+        .style('fill', 'black');
+    }
+  });
+  if (updated && globalWordTree?.totalAnswers) {
+    const count = guessedWords.size;
+    document.getElementById('children-count').textContent = `Solved: ${count} / ${globalWordTree.totalAnswers}`;
+  }
+}
+
+function revealAllWords() {
+  d3.selectAll('.node text')
+    .style('opacity', 1)
+    .style('font-weight', 'bold')
+    .style('fill', function(d) {
+      return d.data.guessed || d.depth === 0 ? 'black' : 'red';
+    });
+}
+
+function renderTree(treeData) {
+  const margin = { top: 20, right: 120, bottom: 20, left: 120 },
+    width = 2200 - margin.right - margin.left,
+    baseHeightPerChild = 50,
+    totalChildren = treeData.children ? countChildren(treeData) : 0,
+    height = Math.max(baseHeightPerChild * totalChildren, 3000);
+
+  const svg = d3.select("body").append("svg")
+    .attr("width", width + margin.right + margin.left)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const root = d3.hierarchy(treeData);
+  const treeLayout = d3.tree().size([height, width]);
+  treeLayout(root);
+
+  svg.selectAll('.link')
+    .data(root.links())
+    .enter().append('path')
+    .attr('class', 'link')
+    .attr('d', d3.linkHorizontal().x(d => d.y).y(d => d.x));
+
+  const node = svg.selectAll('.node')
+    .data(root.descendants())
+    .enter().append('g')
+    .attr('class', 'node')
+    .attr("transform", d => `translate(${d.y},${d.x})`);
+
+  node.append('circle')
+    .attr('r', 10)
+    .style('fill', '#fff')
+    .style('stroke', 'steelblue')
+    .style('stroke-width', '3px');
+
+  node.append('text')
+    .attr('dy', '.35em')
+    .attr('x', d => d.children ? -13 : 13)
+    .attr('text-anchor', d => d.children ? 'end' : 'start')
+    .text(d => d.data.name)
+    .style('font', d => d.data.name.length === findMaxWordLength(globalWordTree) ? '20px sans-serif' : '34px sans-serif')
+    .style('font-weight', d => d.depth === 0 ? 'bold' : 'normal')
+    .style('fill', d => d.depth === 0 ? 'black' : 'gray')
+    .style('opacity', d => d.data.guessed || d.depth === 0 ? 1 : 0);
+}
+
+function findMaxWordLength(node) {
+  if (!node || !node.name) return 0;
+  if (!node.children || node.children.length === 0) return node.name.length;
+  return Math.max(node.name.length, ...node.children.map(findMaxWordLength));
+}
+</script>
+<div id="children-count" class="score-counter">Solved: 0 / 0</div>
+
 </body>
 </html>
